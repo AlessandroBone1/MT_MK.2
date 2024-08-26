@@ -1,1 +1,2 @@
-Tutti i modelli vecchi utilizzati per rilevare il fuoco
+Tutti i modelli vecchi utilizzati per rilevare il fuoco.
+Per cambaire modello è necessario rinominare quello utilizzato come best2.pt e spostarlo nel main di github, spostando quello vecchio nella cartella modelli_vecchi.
