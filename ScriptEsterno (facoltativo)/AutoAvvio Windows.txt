@@ -1,0 +1,53 @@
+@echo off
+where python >nul 2>nul
+IF %ERRORLEVEL% NEQ 0 (
+    echo Python non è installato. Installalo prima di continuare.
+    pause
+    exit /b 1
+)
+
+IF NOT EXIST venv (
+    python -m venv venv
+)
+
+call venv\Scripts\activate
+
+pip install requests
+
+echo import os > update_model.py
+echo import time >> update_model.py
+echo import requests >> update_model.py
+echo from pathlib import Path >> update_model.py
+echo from filecmp import cmp >> update_model.py
+echo. >> update_model.py
+echo GITHUB_REPO = "AlessandroBone1/MT_MK.2" >> update_model.py
+echo MODEL_FILENAME = "best2.pt" >> update_model.py
+echo MODEL_PATH = Path(MODEL_FILENAME) >> update_model.py
+echo GITHUB_RAW_URL = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/{MODEL_FILENAME}" >> update_model.py
+echo. >> update_model.py
+echo def download_model(url, output_path): >> update_model.py
+echo     response = requests.get(url) >> update_model.py
+echo     response.raise_for_status() >> update_model.py
+echo     with open(output_path, 'wb') as file: >> update_model.py
+echo         file.write(response.content) >> update_model.py
+echo. >> update_model.py
+echo def check_and_update_model(): >> update_model.py
+echo     temp_model_path = Path("temp_model.pt") >> update_model.py
+echo     download_model(GITHUB_RAW_URL, temp_model_path) >> update_model.py
+echo     if not MODEL_PATH.exists() or not cmp(MODEL_PATH, temp_model_path, shallow=False): >> update_model.py
+echo         print("Modello aggiornato rilevato. Aggiornamento in corso...") >> update_model.py
+echo         download_model(GITHUB_RAW_URL, MODEL_PATH) >> update_model.py
+echo         print("Modello aggiornato correttamente.") >> update_model.py
+echo     else: >> update_model.py
+echo         print("Il modello è già aggiornato.") >> update_model.py
+echo     if temp_model_path.exists(): >> update_model.py
+echo         temp_model_path.unlink() >> update_model.py
+echo. >> update_model.py
+echo while True: >> update_model.py
+echo     check_and_update_model() >> update_model.py
+echo     time.sleep(300)  >> update_model.py
+
+schtasks /create /tn "UpdateModel" /tr "cmd.exe /c ^""%cd%\venv\Scripts\python.exe^" ^"%cd%\update_model.py^"" /sc minute /mo 5 /f
+
+echo Configurazione completata. Il controllo del modello verrà eseguito ogni 5 minuti.
+pause
