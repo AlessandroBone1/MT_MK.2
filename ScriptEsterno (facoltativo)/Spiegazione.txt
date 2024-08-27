@@ -1,1 +1,2 @@
-
+Nel main è contenuto lo script per aggiornare il modello ogni 300s (5 minuti) nel caso l'utente preferisse gestire questa possibilità al di fuori dal programma di rilevamento.
+Per impostare lo script in avvio automatico, basta eseguire il codice contenuto dei file soprastanti. Uno dedicato per Windows e l'altro per Linux.
