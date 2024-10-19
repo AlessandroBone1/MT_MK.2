@@ -80,65 +80,51 @@ def invia_dati_esp32(distanza, posizione):
         dX = posizione[0] - ex_posizione[0]
         dY = posizione[1] - ex_posizione[1]
         half = cap.get(4)/2
-        
-
-        print("python data:\n")
         #elimino un 5% di possibile errore
         # print(f"exposizione {ex_posizione[0]} - {ex_posizione[1]}")
         # print(f"posizione {posizione[0]} - {posizione[1]}")
-        if ((posizione[1] < (ex_posizione[1]- (ex_posizione[1]/100)*5) or posizione[1] > (ex_posizione[1]+ (ex_posizione[1]/100)*5)) and posizione[1] != ex_posizione[1]):
-            #135: angolo cieco iniziale - tolto poiché pressoché inutile
-            #5.64: 480/(360-275)
-            #coeff. = ris.TOT/(angolo d'azione)
-            #angolo d'azione = somma dell'ampiezza degli angoli ciechi (0-135) e (220-360)
-            print("movimento lungo Y (cartesiane display), giro X")
-            calcoloX = posizione[1]/5.64+ 135
-            messaggio = f"x{calcoloX}"
-            boolY = True
-
-        if ((posizione[0] < (ex_posizione[0]- (ex_posizione[0]/100)*5) or posizione[0] > (ex_posizione[0]+ (ex_posizione[0]/100)*5)) and posizione[0] != ex_posizione[0]):
-            print("movimento lungo X (cartesiane display, giro Z)")
+        if ((posizione[0] < (ex_posizione[0]- (ex_posizione[0]/100)*2) or posizione[0] > (ex_posizione[0]+ (ex_posizione[0]/100)*2)) and posizione[0] != ex_posizione[0]):
+            print("movimento lungo")
             calcoloZ = posizione[0]/3.5
             messaggio = f"z{calcoloZ}"
-            boolX = True
             
-
-        print(f"boolx {boolX} - boolY {boolY}")
-
-        if boolX and boolY:
-            print(messaggio)
             esp32.write(messaggio.encode("utf-8"))
+            esp32.flush()
+            print(messaggio)
+
+        if ((posizione[1] < (ex_posizione[1]- (ex_posizione[1]/100)*2) or posizione[1] > (ex_posizione[1]+ (ex_posizione[1]/100)*2)) and posizione[1] != ex_posizione[1]):
+
+                calcoloZ = posizione[0]/3.5
+                
+                calcoloS = calcoloZ + 30 - (posizione[1])/8
             
-            boolX = False
-            boolY = False
-            calcoloSD = posizione[1]/5.64
-            if posizione[1] > half:
-                messaggio = f"d{calcoloSD}"            
-            else:
-                messaggio = f"s{calcoloSD}"
+                calcoloD = calcoloZ + (posizione[1]-half)/8
 
-            time.sleep(1)
-            esp32.write(messaggio.encode("utf-8"))
-            print(messaggio)
+                if posizione[1] > half:
+                    messaggio = f"d{calcoloD}"  
+                    calcoloS = calcoloZ - (posizione[1]-half)*1/8 
+                else:
+                    messaggio = f"s{calcoloS}"
+
+                time.sleep(2)
+                esp32.write(messaggio.encode("utf-8"))
+                esp32.flush()
+                print(messaggio)
+
+                if posizione[1] > half:
+                    messaggio = f"s{calcoloS}"  
+          
+                else:
+                    messaggio = f"d{calcoloD}"
+
+                time.sleep(2)
+                esp32.write(messaggio.encode("utf-8"))
+                esp32.flush()
+                print(messaggio)
 
 
-        else:
-            print(messaggio)
-            esp32.write(messaggio.encode("utf-8"))  # Invia il messaggio
-            time.sleep(0.1)  # Pausa breve per garantire la corretta trasmissione
+                ex_posizione = posizione
 
-        
-
-        # if boolX == True and boolY == True:
-        #     print("entrambi")
-        #     messaggio = f"z{calcoloZ}"
-        #     esp32.write(messaggio.encode("utf-8"))  # Invia il messaggio
-        #     time.sleep(.2)
-        #     messaggio = f"x{calcoloX}"
-        #     esp32.write(messaggio.encode("utf-8"))  # Invia il messaggio
-        #     time.sleep(.1)
-        
-        # else:
 
     #messaggio = "s" + n per N:{n<180, n>0}
 
@@ -146,7 +132,6 @@ def invia_dati_esp32(distanza, posizione):
 
     #messaggio = "d" + n per N:{n<180, n>0}
         
-        ex_posizione = posizione
     
 
 # Variabili per il controllo manuale della telecamera
