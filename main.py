@@ -14,7 +14,7 @@ MODEL_PATH = Path(MODEL_FILENAME)
 GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/commits?path={MODEL_FILENAME}"
 
 esp32 = serial.Serial('COM7', 9600)  
-time.sleep(2)
+time.sleep(.1)
 ex_posizione = []
 
 
@@ -64,46 +64,90 @@ def invia_dati_esp32(distanza, posizione):
     #distanza : 0-120 altezza - lunghezza  
     #messaggio = f":{distanza} Posizione:{posizione[0]},{posizione[1]}\n"
     messaggio = ""
-    boolX = False
-    boolZ = False
+    
     global ex_posizione
     if ex_posizione == []:
         ex_posizione = posizione
     else:
+
+        boolX = False
+        boolY = False
+        
+
+        #funzione per ruotare solo z grad_sinistra = gradi_destra
+        #funzione per ruotare solo x gradi_sinistra = -gradi_destra + 180
+
+        dX = posizione[0] - ex_posizione[0]
+        dY = posizione[1] - ex_posizione[1]
+        half = cap.get(4)/2
+        
+
+        print("python data:\n")
         #elimino un 5% di possibile errore
         # print(f"exposizione {ex_posizione[0]} - {ex_posizione[1]}")
         # print(f"posizione {posizione[0]} - {posizione[1]}")
-        if (ex_posizione[0] > (posizione[0]- (posizione[0]/100)*5) and ex_posizione[0] < (posizione[0]+ (posizione[0]/100)*5)):
+        if ((posizione[1] < (ex_posizione[1]- (ex_posizione[1]/100)*5) or posizione[1] > (ex_posizione[1]+ (ex_posizione[1]/100)*5)) and posizione[1] != ex_posizione[1]):
             #135: angolo cieco iniziale - tolto poiché pressoché inutile
             #5.64: 480/(360-275)
             #coeff. = ris.TOT/(angolo d'azione)
             #angolo d'azione = somma dell'ampiezza degli angoli ciechi (0-135) e (220-360)
+            print("movimento lungo Y (cartesiane display), giro X")
             calcoloX = posizione[1]/5.64+ 135
             messaggio = f"x{calcoloX}"
-            boolX = True
-    
-        if (ex_posizione[1] > (posizione[1]- (posizione[1]/100)*5) and ex_posizione[1] < (posizione[1]+ (posizione[1]/100)*5)):
+            boolY = True
+
+        if ((posizione[0] < (ex_posizione[0]- (ex_posizione[0]/100)*5) or posizione[0] > (ex_posizione[0]+ (ex_posizione[0]/100)*5)) and posizione[0] != ex_posizione[0]):
+            print("movimento lungo X (cartesiane display, giro Z)")
             calcoloZ = posizione[0]/3.5
             messaggio = f"z{calcoloZ}"
-            boolZ = True
+            boolX = True
+            
 
-        if boolX and boolZ:
-            #alt sin (180) low dx (0) mt dx
-            #alt dx (180) low sin (0) mt sx
-            ...
+        print(f"boolx {boolX} - boolY {boolY}")
+
+        if boolX and boolY:
+            print(messaggio)
+            esp32.write(messaggio.encode("utf-8"))
+            
+            boolX = False
+            boolY = False
+            calcoloSD = posizione[1]/5.64
+            if posizione[1] > half:
+                messaggio = f"d{calcoloSD}"            
+            else:
+                messaggio = f"s{calcoloSD}"
+
+            time.sleep(1)
+            esp32.write(messaggio.encode("utf-8"))
+            print(messaggio)
+
+
+        else:
+            print(messaggio)
+            esp32.write(messaggio.encode("utf-8"))  # Invia il messaggio
+            time.sleep(0.1)  # Pausa breve per garantire la corretta trasmissione
+
         
-    
-    #--condizione-- alto e sinistra
+
+        # if boolX == True and boolY == True:
+        #     print("entrambi")
+        #     messaggio = f"z{calcoloZ}"
+        #     esp32.write(messaggio.encode("utf-8"))  # Invia il messaggio
+        #     time.sleep(.2)
+        #     messaggio = f"x{calcoloX}"
+        #     esp32.write(messaggio.encode("utf-8"))  # Invia il messaggio
+        #     time.sleep(.1)
+        
+        # else:
 
     #messaggio = "s" + n per N:{n<180, n>0}
 
     #--condizione-- alto e destra
 
     #messaggio = "d" + n per N:{n<180, n>0}
-    print(messaggio)
-    esp32.write(messaggio.encode("utf-8"))  # Invia il messaggio
-    time.sleep(0.1)  # Pausa breve per garantire la corretta trasmissione
-    ex_posizione = posizione
+        
+        ex_posizione = posizione
+    
 
 # Variabili per il controllo manuale della telecamera
 manual_mode = False
@@ -167,8 +211,8 @@ while True:
      # Controllo manuale tramite mouse
     else:
         print(f"Controllo manuale attivo - Posizione: {mouse_position}")
-        time.sleep(2)
         invia_dati_esp32(0, mouse_position)  # Invia la posizione del fuoco all'ESP32
+        time.sleep(1)
         annotated_frame = frame
 
     cv2.imshow("Rilevamento Fuoco", annotated_frame)
